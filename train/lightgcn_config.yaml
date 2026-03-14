@@ -1,0 +1,43 @@
+model: LightGCN         #模型名称
+dataset: yelp_tourism   # 数据集名称
+data_path: ../dataset   # 数据路径（相对于train目录）
+
+# 减小模型规模，加速训练
+embedding_size: 64
+n_layers: 3
+
+reg_weight: 1e-4
+stopping_step: 5
+epochs: 20
+learning_rate: 0.001
+train_batch_size: 1024  # 训练批次
+eval_batch_size: 2048
+
+# 设备配置
+device: cpu
+
+# 评估配置
+eval_args:
+  split: {'RS': [0.8, 0.1, 0.1]}
+  group_by: user
+  order: TO
+  mode: full
+metrics: ['Recall', 'NDCG']
+topk: [10, 20]                      # Top-K 推荐
+valid_metric: Recall@20             # 验证指标
+
+load_col:
+  inter: [user_id, item_id, timestamp]
+
+loss_type: 'BPR'     #BPR 拉开差距是为了让正样本在分数中脱颖而出高分，进而让推荐更准
+#如果使用传统的回归损失（如均方误差）来预测评分，就需要为每个用户-物品对构造一个目标值（比如 1 表示喜欢，0 表示不喜欢）
+#但这忽略了未交互的物品可能是用户没看过而不是不喜欢这一事实，容易产生偏差。
+
+# 保存配置
+save_model: True
+output_dir: ./saved
+
+# 禁用 TensorBoard 日志
+tensorboard: False
+
+#此模型只学到了用户可能喜欢什么景点，并没有学会讨厌什么，交互vs未交互，从未交互的池中预测

@@ -1,0 +1,22 @@
+# dataset/yelp_tourism/yelp_tourism.yaml
+
+# 数据格式配置
+field_separator: "\t"
+seq_separator: " "
+
+# 字段映射
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+RATING_FIELD: rating
+TIME_FIELD: timestamp
+
+# ⭐ 关键：字段类型定义（必须添加）
+field_type:
+    user_id: token
+    item_id: token
+    rating: float
+    timestamp: float
+
+# 数据过滤
+min_user_num: 5
+min_item_num: 5

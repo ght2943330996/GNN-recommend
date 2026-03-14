@@ -1,0 +1,181 @@
+Sat 07 Mar 2026 16:04:10 INFO  ['train.py']
+Sat 07 Mar 2026 16:04:10 INFO  
+General Hyper Parameters:
+gpu_id = 0
+use_gpu = True
+seed = 2020
+state = INFO
+reproducibility = True
+data_path = ../dataset\yelp_tourism
+checkpoint_dir = saved
+show_progress = True
+save_dataset = False
+dataset_save_path = None
+save_dataloaders = False
+dataloaders_save_path = None
+log_wandb = False
+
+Training Hyper Parameters:
+epochs = 20
+train_batch_size = 1024
+learner = adam
+learning_rate = 0.001
+train_neg_sample_args = {'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}
+eval_step = 1
+stopping_step = 5
+clip_grad_norm = None
+weight_decay = 0.0
+loss_decimal_place = 4
+
+Evaluation Hyper Parameters:
+eval_args = {'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'TO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}
+repeatable = False
+metrics = ['Recall', 'NDCG']
+topk = [10, 20]
+valid_metric = Recall@20
+valid_metric_bigger = True
+eval_batch_size = 2048
+metric_decimal_place = 4
+
+Dataset Hyper Parameters:
+field_separator = 	
+seq_separator =  
+USER_ID_FIELD = user_id
+ITEM_ID_FIELD = item_id
+RATING_FIELD = rating
+TIME_FIELD = timestamp
+seq_len = None
+LABEL_FIELD = label
+threshold = None
+NEG_PREFIX = neg_
+load_col = {'inter': ['user_id', 'item_id', 'timestamp']}
+unload_col = None
+unused_col = None
+additional_feat_suffix = None
+rm_dup_inter = None
+val_interval = None
+filter_inter_by_user_or_item = True
+user_inter_num_interval = [0,inf)
+item_inter_num_interval = [0,inf)
+alias_of_user_id = None
+alias_of_item_id = None
+alias_of_entity_id = None
+alias_of_relation_id = None
+preload_weight = None
+normalize_field = None
+normalize_all = None
+ITEM_LIST_LENGTH_FIELD = item_length
+LIST_SUFFIX = _list
+MAX_ITEM_LIST_LENGTH = 50
+POSITION_FIELD = position_id
+HEAD_ENTITY_ID_FIELD = head_id
+TAIL_ENTITY_ID_FIELD = tail_id
+RELATION_ID_FIELD = relation_id
+ENTITY_ID_FIELD = entity_id
+benchmark_filename = None
+
+Other Hyper Parameters: 
+worker = 0
+wandb_project = recbole
+shuffle = True
+require_pow = False
+enable_amp = False
+enable_scaler = False
+transform = None
+embedding_size = 64
+n_layers = 3
+reg_weight = 0.0001
+numerical_features = []
+discretization = None
+kg_reverse_r = False
+entity_kg_num_interval = [0,inf)
+relation_kg_num_interval = [0,inf)
+MODEL_TYPE = ModelType.GENERAL
+device = cpu
+loss_type = BPR
+save_model = True
+output_dir = ./saved
+MODEL_INPUT_TYPE = InputType.PAIRWISE
+eval_type = EvaluatorType.RANKING
+single_spec = True
+local_rank = 0
+valid_neg_sample_args = {'distribution': 'uniform', 'sample_num': 'none'}
+test_neg_sample_args = {'distribution': 'uniform', 'sample_num': 'none'}
+
+
+Sat 07 Mar 2026 16:04:10 INFO  yelp_tourism
+The number of users: 3038
+Average actions of users: 5.805729338162661
+The number of items: 234
+Average actions of items: 75.67381974248927
+The number of inters: 17632
+The sparsity of the dataset: 97.51973576858369%
+Remain Fields: ['user_id', 'item_id', 'timestamp']
+Sat 07 Mar 2026 16:04:10 INFO  [Training]: train_batch_size = [1024] train_neg_sample_args: [{'distribution': 'uniform', 'sample_num': 1, 'alpha': 1.0, 'dynamic': False, 'candidate_num': 0}]
+Sat 07 Mar 2026 16:04:10 INFO  [Evaluation]: eval_batch_size = [2048] eval_args: [{'split': {'RS': [0.8, 0.1, 0.1]}, 'order': 'TO', 'group_by': 'user', 'mode': {'valid': 'full', 'test': 'full'}}]
+Sat 07 Mar 2026 16:04:10 INFO  LightGCN(
+  (user_embedding): Embedding(3038, 64)
+  (item_embedding): Embedding(234, 64)
+  (mf_loss): BPRLoss()
+  (reg_loss): EmbLoss()
+)
+Trainable parameters: 209408
+Sat 07 Mar 2026 16:04:10 INFO  FLOPs: 0.0
+Sat 07 Mar 2026 16:04:11 INFO  epoch 0 training [time: 0.29s, train loss: 8.2811]
+Sat 07 Mar 2026 16:04:11 INFO  epoch 0 evaluating [time: 0.27s, valid_score: 0.471200]
+Sat 07 Mar 2026 16:04:11 INFO  valid result: 
+recall@10 : 0.3721    recall@20 : 0.4712    ndcg@10 : 0.2337    ndcg@20 : 0.2587
+Sat 07 Mar 2026 16:04:11 INFO  Saving current: saved\LightGCN-Mar-07-2026_16-04-10.pth
+Sat 07 Mar 2026 16:04:11 INFO  epoch 1 training [time: 0.26s, train loss: 8.2244]
+Sat 07 Mar 2026 16:04:11 INFO  epoch 1 evaluating [time: 0.26s, valid_score: 0.595400]
+Sat 07 Mar 2026 16:04:11 INFO  valid result: 
+recall@10 : 0.4655    recall@20 : 0.5954    ndcg@10 : 0.2717    ndcg@20 : 0.3048
+Sat 07 Mar 2026 16:04:11 INFO  Saving current: saved\LightGCN-Mar-07-2026_16-04-10.pth
+Sat 07 Mar 2026 16:04:12 INFO  epoch 2 training [time: 0.26s, train loss: 8.1118]
+Sat 07 Mar 2026 16:04:12 INFO  epoch 2 evaluating [time: 0.28s, valid_score: 0.628600]
+Sat 07 Mar 2026 16:04:12 INFO  valid result: 
+recall@10 : 0.4817    recall@20 : 0.6286    ndcg@10 : 0.2716    ndcg@20 : 0.3089
+Sat 07 Mar 2026 16:04:12 INFO  Saving current: saved\LightGCN-Mar-07-2026_16-04-10.pth
+Sat 07 Mar 2026 16:04:12 INFO  epoch 3 training [time: 0.25s, train loss: 7.9172]
+Sat 07 Mar 2026 16:04:13 INFO  epoch 3 evaluating [time: 0.26s, valid_score: 0.636400]
+Sat 07 Mar 2026 16:04:13 INFO  valid result: 
+recall@10 : 0.4761    recall@20 : 0.6364    ndcg@10 : 0.2653    ndcg@20 : 0.306
+Sat 07 Mar 2026 16:04:13 INFO  Saving current: saved\LightGCN-Mar-07-2026_16-04-10.pth
+Sat 07 Mar 2026 16:04:13 INFO  epoch 4 training [time: 0.24s, train loss: 7.6161]
+Sat 07 Mar 2026 16:04:13 INFO  epoch 4 evaluating [time: 0.26s, valid_score: 0.632300]
+Sat 07 Mar 2026 16:04:13 INFO  valid result: 
+recall@10 : 0.4709    recall@20 : 0.6323    ndcg@10 : 0.261    ndcg@20 : 0.3021
+Sat 07 Mar 2026 16:04:13 INFO  epoch 5 training [time: 0.25s, train loss: 7.2370]
+Sat 07 Mar 2026 16:04:14 INFO  epoch 5 evaluating [time: 0.25s, valid_score: 0.630300]
+Sat 07 Mar 2026 16:04:14 INFO  valid result: 
+recall@10 : 0.4686    recall@20 : 0.6303    ndcg@10 : 0.2576    ndcg@20 : 0.2987
+Sat 07 Mar 2026 16:04:14 INFO  epoch 6 training [time: 0.25s, train loss: 6.7600]
+Sat 07 Mar 2026 16:04:14 INFO  epoch 6 evaluating [time: 0.26s, valid_score: 0.629500]
+Sat 07 Mar 2026 16:04:14 INFO  valid result: 
+recall@10 : 0.4657    recall@20 : 0.6295    ndcg@10 : 0.256    ndcg@20 : 0.2975
+Sat 07 Mar 2026 16:04:14 INFO  epoch 7 training [time: 0.25s, train loss: 6.2573]
+Sat 07 Mar 2026 16:04:15 INFO  epoch 7 evaluating [time: 0.27s, valid_score: 0.629100]
+Sat 07 Mar 2026 16:04:15 INFO  valid result: 
+recall@10 : 0.4654    recall@20 : 0.6291    ndcg@10 : 0.255    ndcg@20 : 0.2965
+Sat 07 Mar 2026 16:04:15 INFO  epoch 8 training [time: 0.25s, train loss: 5.7309]
+Sat 07 Mar 2026 16:04:15 INFO  epoch 8 evaluating [time: 0.27s, valid_score: 0.628500]
+Sat 07 Mar 2026 16:04:15 INFO  valid result: 
+recall@10 : 0.4624    recall@20 : 0.6285    ndcg@10 : 0.2538    ndcg@20 : 0.2959
+Sat 07 Mar 2026 16:04:15 INFO  epoch 9 training [time: 0.25s, train loss: 5.2190]
+Sat 07 Mar 2026 16:04:16 INFO  epoch 9 evaluating [time: 0.27s, valid_score: 0.629100]
+Sat 07 Mar 2026 16:04:16 INFO  valid result: 
+recall@10 : 0.4641    recall@20 : 0.6291    ndcg@10 : 0.254    ndcg@20 : 0.2958
+Sat 07 Mar 2026 16:04:16 INFO  Finished training, best eval result in epoch 3
+Sat 07 Mar 2026 16:04:16 INFO  Loading model structure and parameters from saved\LightGCN-Mar-07-2026_16-04-10.pth
+Sat 07 Mar 2026 16:04:17 INFO  The running environment of this training is as follows:
++-------------+----------------+
+| Environment |     Usage      |
++=============+================+
+| CPU         |    19.60 %     |
++-------------+----------------+
+| GPU         |   0.0 / 0.0    |
++-------------+----------------+
+| Memory      | 0.29 G/15.86 G |
++-------------+----------------+
+Sat 07 Mar 2026 16:04:17 INFO  best valid : OrderedDict([('recall@10', 0.4761), ('recall@20', 0.6364), ('ndcg@10', 0.2653), ('ndcg@20', 0.306)])
+Sat 07 Mar 2026 16:04:17 INFO  test result: OrderedDict([('recall@10', 0.4304), ('recall@20', 0.5682), ('ndcg@10', 0.2514), ('ndcg@20', 0.2865)])

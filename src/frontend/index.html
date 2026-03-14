@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>故安游 - GNN旅游推荐系统</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="libs/vue.global.js"></script>
+    <script src="libs/axios.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 导航栏 -->
+        <nav class="navbar" :class="{ 'scrolled': isScrolled }">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    <span class="brand-name">故安游</span>
+                </div>
+
+                <div class="nav-menu" v-if="currentUser">
+                    <a href="#" @click.prevent="scrollToSection('explore')" class="nav-link">探索</a>
+                    <a href="#" @click.prevent="scrollToSection('recommend')" class="nav-link">为你推荐</a>
+                    <a href="#" @click.prevent="scrollToSection('popular')" class="nav-link">热门景点</a>
+                    <a href="#" @click.prevent="scrollToSection('all')" class="nav-link">更多景点</a>
+
+                    <div class="nav-user">
+                        <button class="user-avatar" @click="toggleUserMenu">
+                            {{ currentUser.username.charAt(0).toUpperCase() }}
+                        </button>
+                        <div class="user-dropdown" v-if="showUserMenu">
+                            <div class="dropdown-item" @click="showMyProfile">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                我的主页
+                            </div>
+                            <div class="dropdown-item" @click="showMyFavorites">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                                我的收藏
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item" @click="logout">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                    <polyline points="16 17 21 12 16 7"/>
+                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                </svg>
+                                退出登录
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-auth" v-else>
+                    <button class="btn-text" @click="showLoginModal">登录</button>
+                    <button class="btn-primary" @click="showRegisterModal">注册</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero 区域 -->
+        <section class="hero" v-if="!currentUser">
+            <div class="hero-content">
+                <h1 class="hero-title">探索世界的美好</h1>
+                <p class="hero-subtitle">基于 AI 的智能推荐，为你发现下一个心动目的地</p>
+                <button class="btn-hero" @click="showRegisterModal">开始探索</button>
+            </div>
+            <div class="hero-overlay"></div>
+        </section>
+
+        <!-- 主内容区 -->
+        <main class="main-content" v-if="currentUser">
+
+            <!-- 搜索和筛选栏 -->
+            <section class="search-section" id="explore">
+                <div class="container">
+                    <div class="search-bar">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input
+                            type="text"
+                            class="search-input"
+                            placeholder="搜索景点名称..."
+                            v-model="searchKeyword"
+                            @input="handleSearch"
+                        >
+                    </div>
+
+                    <div class="filter-tabs">
+                        <button
+                            class="filter-tab"
+                            :class="{ active: selectedCategory === '' }"
+                            @click="filterByCategory('')"
+                        >
+                            全部
+                        </button>
+                        <button
+                            v-for="category in categories"
+                            :key="category"
+                            class="filter-tab"
+                            :class="{ active: selectedCategory === category }"
+                            @click="filterByCategory(category)"
+                        >
+                            {{ category }}
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 为你推荐 -->
+            <section class="section" id="recommend">
+                <div class="container">
+                    <div class="section-header">
+                        <h2 class="section-title">为你推荐</h2>
+                        <p class="section-subtitle">基于你的喜好，精心挑选</p>
+                    </div>
+
+                    <div class="loading-state" v-if="loading">
+                        <div class="spinner"></div>
+                        <p>正在加载推荐...</p>
+                    </div>
+
+                    <div class="places-grid" v-else-if="filteredRecommendations.length > 0">
+                        <div
+                            class="place-card"
+                            v-for="(item, index) in filteredRecommendations"
+                            :key="item.item_id"
+                            :style="{ animationDelay: (index * 0.1) + 's' }"
+                            @click="viewItemDetail(item.item_id)"
+                        >
+                            <div class="place-image">
+                                <img :src="getPlaceImage(item.main_category)" :alt="item.item_name">
+                                <button
+                                    class="favorite-btn"
+                                    :class="{ active: isFavorite(item.item_id) }"
+                                    @click.stop="toggleFavorite(item.item_id)"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="place-content">
+                                <div class="place-header">
+                                    <h3 class="place-name">{{ item.item_name }}</h3>
+                                    <span class="place-category">{{ item.main_category }}</span>
+                                </div>
+                                <div class="place-rating">
+                                    <div class="stars">
+                                        <span
+                                            v-for="star in 5"
+                                            :key="star"
+                                            class="star"
+                                            :class="{ filled: star <= (userRatings[item.item_id] || 0) }"
+                                            @click.stop="rateItem(item.item_id, star)"
+                                        >
+                                            ★
+                                        </span>
+                                    </div>
+                                    <span class="rating-text" v-if="userRatings[item.item_id]">
+                                        你的评分: {{ userRatings[item.item_id] }}
+                                    </span>
+                                </div>
+                                <div class="place-meta">
+                                    <span class="meta-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                        </svg>
+                                        推荐分数: {{ item.score.toFixed(2) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" v-else>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                        <h3>暂无推荐</h3>
+                        <p>快去评分一些景点，我们会为你推荐更多精彩内容</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 热门景点 -->
+            <section class="section section-alt" id="popular">
+                <div class="container">
+                    <div class="section-header">
+                        <h2 class="section-title">热门景点</h2>
+                        <p class="section-subtitle">大家都在探索的目的地</p>
+                    </div>
+
+                    <div class="loading-state" v-if="loading">
+                        <div class="spinner"></div>
+                        <p>正在加载...</p>
+                    </div>
+
+                    <div class="places-grid" v-else-if="filteredPopular.length > 0">
+                        <div
+                            class="place-card"
+                            v-for="(item, index) in filteredPopular"
+                            :key="item.item_id"
+                            :style="{ animationDelay: (index * 0.1) + 's' }"
+                            @click="viewItemDetail(item.item_id)"
+                        >
+                            <div class="place-image">
+                                <img :src="getPlaceImage(item.main_category)" :alt="item.item_name">
+                                <button
+                                    class="favorite-btn"
+                                    :class="{ active: isFavorite(item.item_id) }"
+                                    @click.stop="toggleFavorite(item.item_id)"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                    </svg>
+                                </button>
+                                <div class="popular-badge">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    热门
+                                </div>
+                            </div>
+                            <div class="place-content">
+                                <div class="place-header">
+                                    <h3 class="place-name">{{ item.item_name }}</h3>
+                                    <span class="place-category">{{ item.main_category }}</span>
+                                </div>
+                                <div class="place-rating">
+                                    <div class="stars">
+                                        <span
+                                            v-for="star in 5"
+                                            :key="star"
+                                            class="star"
+                                            :class="{ filled: star <= (userRatings[item.item_id] || 0) }"
+                                            @click.stop="rateItem(item.item_id, star)"
+                                        >
+                                            ★
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="place-meta">
+                                    <span class="meta-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                        </svg>
+                                        热度: {{ item.score.toFixed(0) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 全部景点 -->
+            <section class="section" id="all">
+                <div class="container">
+                    <div class="section-header">
+                        <h2 class="section-title">更多景点</h2>
+                        <p class="section-subtitle">发现更多精彩目的地</p>
+                    </div>
+
+                    <div class="loading-state" v-if="loading">
+                        <div class="spinner"></div>
+                        <p>正在加载...</p>
+                    </div>
+
+                    <div class="places-grid" v-else-if="filteredAllItems.length > 0">
+                        <div
+                            class="place-card"
+                            v-for="(item, index) in filteredAllItems"
+                            :key="item.item_id"
+                            :style="{ animationDelay: (index * 0.1) + 's' }"
+                            @click="viewItemDetail(item.item_id)"
+                        >
+                            <div class="place-image">
+                                <img :src="getPlaceImage(item.main_category)" :alt="item.item_name">
+                                <button
+                                    class="favorite-btn"
+                                    :class="{ active: isFavorite(item.item_id) }"
+                                    @click.stop="toggleFavorite(item.item_id)"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="place-content">
+                                <div class="place-header">
+                                    <h3 class="place-name">{{ item.item_name }}</h3>
+                                    <span class="place-category">{{ item.main_category }}</span>
+                                </div>
+                                <div class="place-rating">
+                                    <div class="stars">
+                                        <span
+                                            v-for="star in 5"
+                                            :key="star"
+                                            class="star"
+                                            :class="{ filled: star <= (userRatings[item.item_id] || 0) }"
+                                            @click.stop="rateItem(item.item_id, star)"
+                                        >
+                                            ★
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" v-else>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                        <h3>暂无景点</h3>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- 登录/注册模态框 -->
+        <div class="modal-overlay" v-if="showAuthModal" @click="closeAuthModal">
+            <div class="modal auth-modal" @click.stop>
+                <button class="modal-close" @click="closeAuthModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+
+                <div class="auth-content">
+                    <h2 class="auth-title">{{ isLogin ? '欢迎回来' : '开始探索' }}</h2>
+                    <p class="auth-subtitle">{{ isLogin ? '登录你的账号' : '创建你的账号' }}</p>
+
+                    <form class="auth-form" @submit.prevent="handleAuth">
+                        <div class="form-group">
+                            <label>用户名</label>
+                            <input
+                                type="text"
+                                v-model="authForm.username"
+                                placeholder="请输入用户名"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>密码</label>
+                            <input
+                                type="password"
+                                v-model="authForm.password"
+                                placeholder="请输入密码"
+                                required
+                            >
+                        </div>
+
+                        <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
+                        <div class="success-message" v-if="successMessage">{{ successMessage }}</div>
+
+                        <button type="submit" class="btn-submit">
+                            {{ isLogin ? '登录' : '注册' }}
+                        </button>
+                    </form>
+
+                    <div class="auth-switch">
+                        <span v-if="isLogin">还没有账号？</span>
+                        <span v-else>已有账号？</span>
+                        <a href="#" @click.prevent="toggleAuthMode">
+                            {{ isLogin ? '立即注册' : '立即登录' }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 景点详情模态框 -->
+        <div class="modal-overlay" v-if="showDetailModal" @click="closeDetailModal">
+            <div class="modal detail-modal" @click.stop>
+                <button class="modal-close" @click="closeDetailModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+
+                <div class="detail-content" v-if="itemDetail">
+                    <div class="detail-image">
+                        <img :src="getPlaceImage(itemDetail.main_category)" :alt="itemDetail.item_name">
+                    </div>
+
+                    <div class="detail-body">
+                        <div class="detail-header">
+                            <div>
+                                <h2 class="detail-title">{{ itemDetail.item_name }}</h2>
+                                <span class="detail-category">{{ itemDetail.main_category }}</span>
+                            </div>
+                            <button
+                                class="favorite-btn large"
+                                :class="{ active: isFavorite(itemDetail.item_id) }"
+                                @click="toggleFavorite(itemDetail.item_id)"
+                            >
+                                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="rating-summary">
+                            <div class="rating-score">
+                                <div class="score-number">{{ itemDetail.rating_stats.average }}</div>
+                                <div class="score-stars">
+                                    <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= Math.round(itemDetail.rating_stats.average) }">★</span>
+                                </div>
+                                <div class="score-count">{{ itemDetail.rating_stats.count }} 条评分</div>
+                            </div>
+
+                            <div class="rating-bars">
+                                <div class="rating-bar" v-for="star in [5,4,3,2,1]" :key="star">
+                                    <span class="bar-label">{{ star }}星</span>
+                                    <div class="bar-track">
+                                        <div class="bar-fill" :style="{ width: getRatingPercentage(star) + '%' }"></div>
+                                    </div>
+                                    <span class="bar-count">{{ itemDetail.rating_stats.distribution[star] }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <h3 class="section-title-small">你的评分</h3>
+                            <div class="stars large">
+                                <span
+                                    v-for="star in 5"
+                                    :key="star"
+                                    class="star"
+                                    :class="{ filled: star <= (userRatings[itemDetail.item_id] || 0) }"
+                                    @click="rateItem(itemDetail.item_id, star)"
+                                >
+                                    ★
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <h3 class="section-title-small">用户评论 ({{ itemDetail.comments.total }})</h3>
+
+                            <div class="comment-form">
+                                <textarea
+                                    v-model="newComment"
+                                    placeholder="分享你的旅行体验..."
+                                    rows="3"
+                                ></textarea>
+                                <button class="btn-primary" @click="submitComment">发表评论</button>
+                            </div>
+
+                            <div class="comments-list" v-if="itemComments.length > 0">
+                                <div class="comment-item" v-for="comment in itemComments" :key="comment.id">
+                                    <div class="comment-avatar">{{ comment.username.charAt(0).toUpperCase() }}</div>
+                                    <div class="comment-content">
+                                        <div class="comment-header">
+                                            <span class="comment-author">{{ comment.username }}</span>
+                                            <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
+                                            <button
+                                                v-if="currentUser && comment.user_id === currentUser.user_id"
+                                                class="btn-delete-comment"
+                                                @click="deleteCommentInDetail(comment.id)"
+                                                title="删除评论"
+                                            >
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                    <polyline points="3 6 5 6 21 6"/>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <p class="comment-text">{{ comment.content }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="empty-state small" v-else>
+                                <p>暂无评论，快来抢沙发吧！</p>
+                            </div>
+                        </div>
+
+                        <div class="detail-section" v-if="similarItems.length > 0">
+                            <h3 class="section-title-small">相似景点</h3>
+                            <div class="similar-grid">
+                                <div
+                                    class="similar-card"
+                                    v-for="item in similarItems"
+                                    :key="item.item_id"
+                                    @click="viewItemDetail(item.item_id)"
+                                >
+                                    <img :src="getPlaceImage(item.main_category)" :alt="item.item_name">
+                                    <div class="similar-info">
+                                        <h4>{{ item.item_name }}</h4>
+                                        <div class="similar-rating">
+                                            <span class="star filled">★</span>
+                                            <span>{{ item.avg_rating }}</span>
+                                            <span class="count">({{ item.rating_count }})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="loading-state" v-else>
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 我的收藏模态框 -->
+        <div class="modal-overlay" v-if="showFavoritesModal" @click="closeFavoritesModal">
+            <div class="modal favorites-modal" @click.stop>
+                <button class="modal-close" @click="closeFavoritesModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+
+                <div class="modal-header">
+                    <h2>我的收藏</h2>
+                    <p>{{ favoriteItems.length }} 个景点</p>
+                </div>
+
+                <div class="favorites-grid" v-if="favoriteItems.length > 0">
+                    <div
+                        class="place-card"
+                        v-for="item in favoriteItems"
+                        :key="item.item_id"
+                        @click="viewItemDetail(item.item_id)"
+                    >
+                        <div class="place-image">
+                            <img :src="getPlaceImage(item.main_category)" :alt="item.item_name">
+                            <button
+                                class="favorite-btn active"
+                                @click.stop="toggleFavorite(item.item_id)"
+                            >
+                                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="place-content">
+                            <div class="place-header">
+                                <h3 class="place-name">{{ item.item_name }}</h3>
+                                <span class="place-category">{{ item.main_category }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="empty-state" v-else>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <h3>还没有收藏</h3>
+                    <p>点击景点卡片上的爱心图标来收藏你喜欢的景点</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
